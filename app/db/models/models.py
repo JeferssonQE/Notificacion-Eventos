@@ -23,8 +23,8 @@ class RecordatorioDolar(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     numero = Column(String)
     nombre = Column(String, nullable=False)        # {{1}}
-    movimiento = Column(String, nullable=False)    # {{2}}
-    porcentaje = Column(String, nullable=False)    # {{3}}
+    movimiento = Column(String, nullable=False)    # {{2}} #[subio, bajo]
+    porcentaje = Column(Float, nullable=False)    # {{3}} # 10.0
     valor = Column(String, nullable=False)         # {{4}}
     #fecha = Column(String, nullable=False)         # {{5}}
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -38,5 +38,4 @@ class Dolar(Base):
     fecha = Column(Date, nullable=False)
     precio_venta = Column(Float, nullable=False)
     precio_compra = Column(Float, nullable=False)
-    diferencia_ayer = Column(Float)                # cambio respecto al día anterior
     scraped_at = Column(DateTime, default=datetime.utcnow)
