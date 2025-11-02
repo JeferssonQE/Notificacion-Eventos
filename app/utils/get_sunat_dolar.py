@@ -8,6 +8,7 @@ headers = {
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
                   "Chrome/141.0.0.0 Safari/537.36"
 }
+
 def time_today():
     from datetime import datetime
     now = datetime.now()

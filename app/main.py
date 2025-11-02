@@ -1,6 +1,6 @@
 # FastAPI entry point
 from fastapi import FastAPI
-from app.api.routes import router as api_router
+from app.api.v1.eventos import router as api_router
 from app.api.health import router as health_router
 from app.api.v1.eventos import router as eventos_router
 from app.api.v1.recordatorios import router as recordatorios_router

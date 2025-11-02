@@ -1,7 +1,7 @@
 from datetime import datetime
 from app.scraper.scraper_dolar import get_today_exchange_rate
 from app.db.database import Dolar, get_db_session
-from app.utils.celery import celery_app
+from app.utils.send_celery import celery_app
 
 @celery_app.task
 def run_scraper_and_save():

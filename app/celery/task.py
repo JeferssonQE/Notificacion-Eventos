@@ -1,9 +1,15 @@
 import time, random
-from app.utils.celery import celery_app
+from app.celery.config import celery_app
 from app.utils.get_sunat_dolar import dolar_sunat_today
 #from app.scraper.scraper_dolar import get_today_exchange_rate
 from app.db.database import get_db_session, Dolar
 from app.db.database import RecordatorioDolar 
+from celery.schedules import crontab
+
+#test celery
+@celery_app.task(name="tasks.prueba")
+def prueba():
+    print("✅ Celery está funcionando correctamente")
 
 # ----- GUARDAR PRECIO -----
 @celery_app.task
@@ -42,7 +48,7 @@ def scrape_and_save():
 
 
 # Wrapper con jitter para no golpear siempre exacto a las 00:32
-@celery_app.task
+@celery_app.task(name="app.utils.tasks.scrape_and_save_with_jitter")
 def scrape_and_save_with_jitter(jitter_max_seconds=180):
     if jitter_max_seconds and jitter_max_seconds > 0:
         time.sleep(random.randint(0, int(jitter_max_seconds)))
@@ -56,7 +62,7 @@ def calculate_increment(current, percentage):
 def calculate_decrement(current, percentage):
     return current - (current * (percentage / 100.0))
 
-@celery_app.task
+@celery_app.task(name="app.utils.tasks.verificar_alertas")
 def verificar_alertas(precio_actual):
     session = get_db_session()()
     print(f"🔔 Verificando alertas para precio actual: {precio_actual}")

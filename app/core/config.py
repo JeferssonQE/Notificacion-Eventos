@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     TOKEN_SUNAT_API: str
 
+    
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
     @property
     def database_url(self) -> str:

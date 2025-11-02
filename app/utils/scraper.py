@@ -5,11 +5,13 @@ WISE_URL = "https://wise.com/es/currency-converter/usd-to-pen-rate?amount=1" # p
 KAMBISTA_URL = "https://kambista.com/?utm_source=google&utm_medium=cpc&utm_campaign=max_rendimiento&utm_content=inversionistas&gad_source=1&gad_campaignid=22614168948&gbraid=0AAAAABndTR0BP90hbvD-w2KGsnFyPzEAo&gclid=CjwKCAjw2vTFBhAuEiwAFaScwlojR4LIQAJn1RRjsoFa18nbagocEPzzOd9Hsd43FkW-pfl7umaWBBoCZbgQAvD_BwE"
 SECUREX_URL = "https://securex.pe/"#todo
 
+CUANTOESTAELDOLAR_URL="https://cuantoestaeldolar.pe/"
+
 def scrape(url: str):
     r = requests.get(url)
     if r.status_code == 200:
         soup = BeautifulSoup(r.text, "html.parser")
-        return soup.prettify()  # Retorna todo el HTML formateado
+        return soup,r.text
     else:
         return f"Error: Código de estado {r.status_code}"
     
@@ -57,9 +59,58 @@ def extract_dolar_value_kambista(html: str) -> dict:
     else:
         raise ValueError("No se encontraron los elementos con id 'valcompra' y/o 'valventa'.")
     
-#def extract_dolar_value_securex(html: str) -> dict:
+import requests
+import json
+from bs4 import BeautifulSoup
 
-body=scrape(SECUREX_URL)
-print(body)
-#print(extract_dolar_value_google(body))
-#print(extract_dolar_value(body))
+CUANTOESTAELDOLAR_URL = "https://cuantoestaeldolar.pe/"
+
+def get_exchange_rates_casas() -> list[dict]:
+    """
+    Extrae las tasas de cambio (compra y venta) de las casas de cambio online
+    directamente del JSON embebido en 'https://cuantoestaeldolar.pe/'.
+
+    Retorna:
+        list[dict]: lista de diccionarios con nombre, compra, venta y URL.
+    """
+    # Obtener HTML base
+    response = requests.get(CUANTOESTAELDOLAR_URL, timeout=20)
+    if response.status_code != 200:
+        raise ConnectionError(f"Error HTTP {response.status_code}")
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Buscar el script con los datos JSON
+    script_tag = soup.find("script", id="__NEXT_DATA__")
+    if not script_tag:
+        raise ValueError("No se encontró el script '__NEXT_DATA__' en la página.")
+
+    # Cargar el JSON
+    data = json.loads(script_tag.string)
+    casas = data["props"]["pageProps"]["data"]
+
+    # Procesar las casas de cambio
+    resultados = []
+    for c in casas:
+        nombre = c.get("title")
+        site = c.get("site", "")
+        rates = c.get("rates", {})
+        compra = float(rates["buy"]["cost"])
+        venta = float(rates["sale"]["cost"])
+
+        resultados.append({
+            "nombre": nombre,
+            "compra": compra,
+            "venta": venta,
+            "sitio": site
+        })
+
+    return resultados
+
+
+# Ejemplo de uso
+if __name__ == "__main__":
+    casas = get_exchange_rates_casas()
+    print("=== TIPO DE CAMBIO DE CASAS ONLINE ===")
+    for c in casas:
+        print(f"{c['nombre']:15} | Compra: {c['compra']} | Venta: {c['venta']} | Web: {c['sitio']}")

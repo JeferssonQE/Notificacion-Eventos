@@ -1,4 +1,4 @@
-from app.utils.alerts import verificar_alertas
+from app.utils.task_alerts import verificar_alertas
 
 if __name__ == "__main__":
     # Simulamos un precio actual

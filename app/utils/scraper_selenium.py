@@ -73,6 +73,5 @@ def extract_dolar_value_tkambio(html: str) -> dict:
 
 
 # Ejemplo
-html = get_html_with_selenium(REXTIE_URL)
+html = get_html_with_selenium(SOURCE_URL)
 print(html)
-print(extract_dolar_value_tkambio(html))

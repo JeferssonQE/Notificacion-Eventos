@@ -56,6 +56,7 @@ def get_today_exchange_rate():
 if __name__ == "__main__":
     dolar_hoy = get_today_exchange_rate()
     if dolar_hoy:
-        print(f"📅 {dolar_hoy['fecha']} → Compra: {dolar_hoy['compra']} | Venta: {dolar_hoy['venta']}")
+        print("TEST : DOLAR SUNAT")
+        print(dolar_hoy)
     else:
         print("❌ No se pudo obtener el tipo de cambio de hoy.")
