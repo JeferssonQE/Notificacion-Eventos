@@ -1,6 +1,6 @@
 import json
 from fastapi import APIRouter, Request, HTTPException
-from app.services.infrastructure.whatsapp_service import send_main_menu,send_whatsapp_template, send_whatsapp_text,send_whatsapp_buttons,send_whatsapp_list
+from app.services.infrastructure.whatsapp.whatsapp_service import send_main_menu,send_whatsapp_template, send_whatsapp_text,send_whatsapp_buttons,send_whatsapp_list
 from app.core.config import settings
 
 

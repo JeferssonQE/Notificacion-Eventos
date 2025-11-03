@@ -3,7 +3,7 @@ from app.db.database import get_db
 from app.services.domain.evento_service import EventoService
 from app.services.domain.recordatorio_dolar_service import RecordatorioDolarService
 from app.services.domain.dolar_service import DolarService
-from app.services.infrastructure.whatsapp_service import send_whatsapp_template
+from app.services.infrastructure.whatsapp.whatsapp_service import send_whatsapp_template
 from datetime import datetime, timedelta
 from typing import List
 
