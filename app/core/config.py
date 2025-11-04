@@ -7,21 +7,21 @@ from functools import lru_cache
 dotenv.load_dotenv()
 
 class Settings(BaseSettings):
-    DB_USER: str 
-    DB_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: str
-    DB_NAME: str
+    DB_USER: str = None
+    DB_PASSWORD: str = None
+    DB_HOST: str = None
+    DB_PORT: str = None
+    DB_NAME: str = None
 
 
-    REDIS_URL: str 
-    SCRAPE_TIME: str
+    REDIS_URL: str = None
+    SCRAPE_TIME: str = None
     
-    PHONE_NUMBER_ID: str
-    VERIFY_TOKEN: str
-    WHATSAPP_TOKEN: str
+    PHONE_NUMBER_ID: str = None
+    VERIFY_TOKEN: str = None
+    WHATSAPP_TOKEN: str = None
 
-    TOKEN_SUNAT_API: str
+    TOKEN_SUNAT_API: str = None
 
     EMAIL_USER: str
     EMAIL_PASS: str
