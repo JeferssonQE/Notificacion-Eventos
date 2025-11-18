@@ -3,7 +3,7 @@ from app.core.config import settings
 from app.db.supabase.config import supabase
 from datetime import datetime
 
-url = "https://e-consulta.sunat.gob.pe/cl-at-ittipcam/tcS01Alias/listarTipoCambio"
+URL = "https://e-consulta.sunat.gob.pe/cl-at-ittipcam/tcS01Alias/listarTipoCambio"
 
 headers = {
     "Content-Type": "application/json",
@@ -18,42 +18,77 @@ def time_today():
     return now.year, now.month, now.day
 
 def insert_db(data):
-    response = supabase.table("dolar").insert(data).execute()
-    return response
+    return supabase.table("dolar").insert(data).execute()
+
+def get_history(origen):
+    return (
+        supabase.table("dolar")
+        .select("*")
+        .eq("origen", origen)
+        .order("fecha", desc=True)
+        .execute()
+        .data
+    )
 
 def dolar_sunat_today():
-    year, month, day = time_today()
-    print(f"📅 Consultando tipo de cambio para {day}/{month}/{year}...")
-    payload = {"anio": year, "mes": month - 1, "token": settings.TOKEN_SUNAT_API}
+    today = datetime.now()
+    fecha_iso = today.strftime("%Y-%m-%d")
+    fecha_sunat = today.strftime("%d/%m/%Y")
 
-    response = requests.post(url, json=payload, headers=headers)
+    payload = {"anio": today.year, "mes": today.month - 1, "token": settings.TOKEN_SUNAT_API}
+    response = requests.post(URL, json=payload, headers=headers)
 
-    origen = "SUNAT_API"
-    fecha = f"{day:02d}/{month:02d}/{year}"
-    compra = 0.0
-    venta = 0.0
-    if response.ok:
-        print("✅ Respuesta recibida: \nlen(response): " + str(len(response.json())))
+    if not response.ok:
+        print("❌ Error SUNAT:", response.status_code)
+        return None
 
-        for item in response.json():
-            if item["fecPublica"] == fecha:
-                if item["codTipo"] == "V":
-                    venta = float(item["valTipo"])
-                if item["codTipo"] == "C":
-                    compra = float(item["valTipo"])
-        data={
-            "origen": origen,
-            "fecha": f"{year}-{month:02d}-{day:02d}",
+    compra = venta = 0.0
+
+    for item in response.json():
+        if item["fecPublica"] == fecha_sunat:
+            if item["codTipo"] == "C":
+                compra = float(item["valTipo"])
+            elif item["codTipo"] == "V":
+                venta = float(item["valTipo"])
+
+    # No se encontró datos del día
+    if compra == 0 and venta == 0:
+        print("❌ SUNAT no publicó tipo de cambio hoy")
+        return None
+
+    # Obtener historial antes de insertar
+    history = get_history("SUNAT_API")
+
+    # Si ya existe el registro de hoy → no insertar
+    if history and history[0]["fecha"] == fecha_iso:
+        print("⚠️ Ya existe registro de hoy. No se inserta.")
+    else:
+        insert_db({
+            "origen": "SUNAT_API",
+            "fecha": fecha_iso,
             "precio_compra": compra,
             "precio_venta": venta,
-        }
-        insert_db(data)
-        
-        return {"origen": origen, "fecha": fecha, "compra": compra, "venta": venta}
-    else:
-        print("❌ Error:", response.status_code, response.text)
-    return None
+        })
 
+    # Actualizamos historia después de insertar
+    history = get_history("SUNAT_API")
+
+    # Encontrar ayer
+    ayer = None
+    if len(history) > 1:
+        ayer = {
+            "compra": history[1]["precio_compra"],
+            "venta": history[1]["precio_venta"],
+            "fecha": history[1]["fecha"],
+        }
+
+    return {
+        "origen": "SUNAT_API",
+        "fecha": fecha_iso,
+        "compra": compra,
+        "venta": venta,
+        "ayer": ayer,
+    }
 
 if __name__ == "__main__":
     data = dolar_sunat_today()

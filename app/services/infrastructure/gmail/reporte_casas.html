@@ -10,11 +10,12 @@
 
       <!-- 🔁 Intro -->
       <div style="background:#eaf4ff; border-radius:10px; padding:12px 18px; margin-bottom:20px; font-size:15px;">
-        🔁 Estas son las <b>3 mejores tasas de cambio</b> de hoy
+        🔁 Estas son las <b>3 mejores tasas de cambio</b> de hoy (con variación diaria)
       </div>
 
       <!-- 🏦 Mejores tasas -->
       <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        
         <!-- Compra -->
         <div style="flex:1; background:#f0f7ff; border-radius:12px; padding:15px;">
           <h3 style="color:#0066cc; margin-bottom:10px;">💱 Compra</h3>
@@ -26,26 +27,35 @@
         <!-- Venta -->
         <div style="flex:1; background:#fff9e6; border-radius:12px; padding:15px;">
           <h3 style="color:#cc8500; margin-bottom:10px;">💰 Venta</h3>
-          <ul style="list-style:none; padding:0; margin:0; font-size:15px; color:#333;">
+          <ul style="list-style:none; padding:0; margin:0; font-size:15px; color:#333; line-height:1.8;">
             {{top3_venta}}
           </ul>
         </div>
+
       </div>
 
       <!-- 📊 SUNAT -->
       <div style="margin-top:25px; background:#e0f2fe; border-left:5px solid #0284c7; border-radius:10px; padding:18px 22px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
-        <h3 style="color:#0369a1; margin:0 0 8px 0; font-weight:600;">🏛️ Tipo de cambio de referencia SUNAT</h3>
-        <div style="display:flex; justify-content:space-between; max-width:300px; font-size:15px; margin-top:8px;">
+        <h3 style="color:#0369a1; margin:0 0 8px 0; font-weight:600;">🏛️ Tipo de cambio SUNAT (con variación)</h3>
+
+        <!-- Compra -->
+        <div style="display:flex; justify-content:space-between; max-width:380px; font-size:15px; margin-top:8px;">
           <p style="margin:0;">💵 <b>Compra:</b></p>
-          <p style="margin:0; color:#0077cc;">{{sunat_compra}} PEN</p>
+          <p style="margin:0; color:#0077cc;">
+            {{sunat_compra}} PEN
+            <span style="margin-left:5px;">{{sunat_compra_var}}</span>
+          </p>
         </div>
-        <div style="display:flex; justify-content:space-between; max-width:300px; font-size:15px; margin-top:4px;">
+
+        <!-- Venta -->
+        <div style="display:flex; justify-content:space-between; max-width:380px; font-size:15px; margin-top:4px;">
           <p style="margin:0;">💵 <b>Venta:</b></p>
-          <p style="margin:0; color:#cc8500;">{{sunat_venta}} PEN</p>
+          <p style="margin:0; color:#cc8500;">
+            {{sunat_venta}} PEN
+            <span style="margin-left:5px;">{{sunat_venta_var}}</span>
+          </p>
         </div>
-        <p style="font-size:12px; margin-top:10px; color:#555;">
-          Fuente: <a href="https://api.apis.net.pe/v1/tipo-cambio-sunat" style="color:#0077cc; text-decoration:none;">SUNAT vía apis.net.pe</a>
-        </p>
+
       </div>
 
       <!-- 🏦 Mejores casas -->
@@ -71,6 +81,7 @@
         📬 Enviado automáticamente por tu <b>bot de Python</b> 🐍<br>
         Actualizado en tiempo real • Próxima actualización en 24 horas
       </p>
+
     </div>
   </body>
 </html>

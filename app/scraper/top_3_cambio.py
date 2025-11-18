@@ -9,6 +9,7 @@ def time_today():
     now = datetime.now()
     fecha = f"{now.year}-{now.month:02d}-{now.day:02d}"
     return fecha
+
 def insert_casa_db(data):
     response = supabase.table("dolar").insert(data).execute()
     return response
@@ -70,6 +71,7 @@ def get_exchange_rates_casas() -> list[dict]:
             "precio_compra": compra,
             "precio_venta": venta,
         }
+
         insert_casa_db(data)
     
     return casas
