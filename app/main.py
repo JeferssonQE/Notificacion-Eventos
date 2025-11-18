@@ -9,17 +9,15 @@ from app.api.v1.dolar import router as dolar_router
 app = FastAPI(
     title="DólarBot API",
     description="API para gestión de alertas de dólar y notificaciones",
-    version="1.0.0"
+    version="1.0.0",
 )
+
 
 # Ruta básica de prueba
 @app.get("/")
 def root():
-    return {
-        "message": "DólarBot API", 
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "DólarBot API", "version": "1.0.0", "docs": "/docs"}
+
 
 # Health checks
 app.include_router(health_router, prefix="/api", tags=["health"])

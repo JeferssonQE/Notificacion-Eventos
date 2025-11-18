@@ -6,6 +6,7 @@ r = redis.Redis.from_url(settings.REDIS_URL)
 
 # Example function
 
+
 def cache_set(key, value, ex=3600):
     r.set(key, value, ex=ex)
 

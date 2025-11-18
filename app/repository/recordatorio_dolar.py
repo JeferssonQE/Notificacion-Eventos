@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.models import RecordatorioDolar
 from app.schemas.recordatorio_dolar import RecordatorioDolarCreate
 
+
 class RecordatorioDolarRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -16,7 +17,11 @@ class RecordatorioDolarRepository:
         return obj
 
     def obtener_por_numero(self, numero: int) -> RecordatorioDolar | None:
-        return self.db.query(RecordatorioDolar).filter(RecordatorioDolar.numero == numero).first()
+        return (
+            self.db.query(RecordatorioDolar)
+            .filter(RecordatorioDolar.numero == numero)
+            .first()
+        )
 
     def eliminar_por_id(self, id: int) -> RecordatorioDolar | None:
         obj = self.obtener_por_id(id)
@@ -24,8 +29,11 @@ class RecordatorioDolarRepository:
             self.db.delete(obj)
             self.db.commit()
         return obj
-    #TODO: UPDATE BY ID 
-    
-    #---Helper---
+
+    # TODO: UPDATE BY ID
+
+    # ---Helper---
     def obtener_por_id(self, id: int) -> RecordatorioDolar | None:
-        return self.db.query(RecordatorioDolar).filter(RecordatorioDolar.id == id).first()
+        return (
+            self.db.query(RecordatorioDolar).filter(RecordatorioDolar.id == id).first()
+        )

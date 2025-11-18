@@ -3,6 +3,7 @@ from app.scraper.scraper_dolar import get_today_exchange_rate
 from app.db.database import Dolar, get_db_session
 from app.utils.send_celery import celery_app
 
+
 @celery_app.task
 def run_scraper_and_save():
     session = get_db_session()()
@@ -10,8 +11,10 @@ def run_scraper_and_save():
     if not data:
         return "No se pudo obtener datos"
 
-    fecha = datetime.strptime(data["fecha"], "%d").date().replace(
-        year=datetime.today().year, month=datetime.today().month
+    fecha = (
+        datetime.strptime(data["fecha"], "%d")
+        .date()
+        .replace(year=datetime.today().year, month=datetime.today().month)
     )
 
     dolar = Dolar(
@@ -19,7 +22,7 @@ def run_scraper_and_save():
         fecha=fecha,
         precio_compra=data["compra"],
         precio_venta=data["venta"],
-        diferencia_ayer=None
+        diferencia_ayer=None,
     )
 
     session.merge(dolar)

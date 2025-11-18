@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.repository.recordatorio_dolar_repository import RecordatorioDolarRepository
 from app.schemas.recordatorio_dolar import RecordatorioDolarCreate
 
+
 class RecordatorioDolarService:
     def __init__(self, db: Session):
         self.repo = RecordatorioDolarRepository(db)
@@ -30,28 +31,30 @@ class RecordatorioDolarService:
             raise ValueError("El porcentaje es obligatorio")
         if not data.valor:
             raise ValueError("El valor es obligatorio")
-        
+
         return self.repo.create(
             numero=data.numero,
             nombre=data.nombre,
             movimiento=data.movimiento,
             porcentaje=data.porcentaje,
-            valor=data.valor
+            valor=data.valor,
         )
-    
-    def actualizar_recordatorio(self, recordatorio_id: int, data: RecordatorioDolarCreate):
+
+    def actualizar_recordatorio(
+        self, recordatorio_id: int, data: RecordatorioDolarCreate
+    ):
         recordatorio = self.repo.update(
             recordatorio_id=recordatorio_id,
             numero=data.numero,
             nombre=data.nombre,
             movimiento=data.movimiento,
             porcentaje=data.porcentaje,
-            valor=data.valor
+            valor=data.valor,
         )
         if not recordatorio:
             raise ValueError("Recordatorio no encontrado")
         return recordatorio
-    
+
     def borrar_recordatorio(self, recordatorio_id: int):
         recordatorio = self.repo.delete(recordatorio_id)
         if not recordatorio:

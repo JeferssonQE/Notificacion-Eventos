@@ -1,11 +1,20 @@
 import requests
 import json
 from bs4 import BeautifulSoup
-
+from app.db.supabase.config import supabase
+from datetime import datetime
 CUANTOESTAELDOLAR_URL = "https://cuantoestaeldolar.pe/"
 
+def time_today():
+    now = datetime.now()
+    fecha = f"{now.year}-{now.month:02d}-{now.day:02d}"
+    return fecha
+def insert_casa_db(data):
+    response = supabase.table("dolar").insert(data).execute()
+    return response
+
 def get_exchange_rates_casas() -> list[dict]:
-    
+
     response = requests.get(CUANTOESTAELDOLAR_URL, timeout=20)
     if response.status_code != 200:
         raise ConnectionError(f"Error HTTP {response.status_code}")
@@ -33,7 +42,7 @@ def get_exchange_rates_casas() -> list[dict]:
         if compra_tag:
             p = compra_tag.find("p")
             if p:
-                try:    
+                try:
                     compra = float(p.text.strip())
                 except ValueError:
                     compra = None
@@ -47,48 +56,55 @@ def get_exchange_rates_casas() -> list[dict]:
                     venta = float(p.text.strip())
                 except ValueError:
                     venta = None
-        # Validar datos            
+        # Validar datos
         if compra is None or venta is None:
-            continue                
-        if venta <=0.0 or compra <=0.0:
+            continue
+        if venta <= 0.0 or compra <= 0.0:
             continue
 
-        casas.append({
-            "nombre": nombre,
-            "url": url,
-            "compra": compra,
-            "venta": venta
-        })
+        casas.append({"nombre": nombre, "url": url, "compra": compra, "venta": venta})
 
+        data={
+            "origen": nombre,
+            "fecha": time_today(),
+            "precio_compra": compra,
+            "precio_venta": venta,
+        }
+        insert_casa_db(data)
+    
     return casas
 
+
 import heapq
+
+
 def top_3_mejores_casas(casas: list[dict]):
 
-    top_3_compra = heapq.nlargest(3, casas, key=lambda x: x["compra"]  )
+    top_3_compra = heapq.nlargest(3, casas, key=lambda x: x["compra"])
     top_3_venta = heapq.nsmallest(3, casas, key=lambda x: x["venta"])
 
     return top_3_compra, top_3_venta
+
 
 def arbitraje_posible(casas: list[dict]) -> tuple[dict, dict, bool]:
     min_venta = min(casas, key=lambda x: x["venta"])
     max_compra = max(casas, key=lambda x: x["compra"])
 
-    return min_venta,max_compra,max_compra["compra"] > min_venta["venta"]
+    return min_venta, max_compra, max_compra["compra"] > min_venta["venta"]
+
 
 if __name__ == "__main__":
-    casas=get_exchange_rates_casas()
-    min_v, max_c, posible=arbitraje_posible(casas)
-    print("===========Hay arbitraje posible?=========\n Result : ",posible)
+    casas = get_exchange_rates_casas()
+    min_v, max_c, posible = arbitraje_posible(casas)
+    print("===========Hay arbitraje posible?=========\n Result : ", posible)
     print("Casa con menor precio de venta:")
     print(min_v)
     print("Casa con mayor precio de compra:")
     print(max_c)
     print("===========================================\n")
-    tp3_c,tp3_v=top_3_mejores_casas(casas)
+    tp3_c, tp3_v = top_3_mejores_casas(casas)
 
     print("Top 3 mejores casas para comprar dólares:")
     print(tp3_c)
     print("Top 3 mejores casas para vender dólares:")
     print(tp3_v)
-    

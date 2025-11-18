@@ -1,6 +1,7 @@
 # Scheduler placeholder
 import schedule, time, threading
 
+
 def start_scheduler(job_func):
     schedule.every().day.at("09:00").do(job_func)
 

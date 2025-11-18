@@ -1,20 +1,27 @@
 from datetime import datetime
 import os
 from app.services.infrastructure.gmail.mailer import GmailMailer
-from app.scraper.top_3_cambio import get_exchange_rates_casas, top_3_mejores_casas, arbitraje_posible
+from app.scraper.top_3_cambio import (
+    get_exchange_rates_casas,
+    top_3_mejores_casas,
+    arbitraje_posible,
+)
 from app.core.config import settings
 from app.scraper.get_sunat_dolar import dolar_sunat_today
+from app.db.supabase.config import supabase
 
 def send_gmail_with_dolar():
     casas = get_exchange_rates_casas()
     if not casas:
         print("❌ No se pudieron obtener las casas de cambio.")
         return
+
+    # referencia Sunat
+    s_data = dolar_sunat_today()
+    s_compra = s_data["compra"]
+    s_venta = s_data["venta"]
+
     
-    #referencia Sunat
-    s_data=dolar_sunat_today()
-    s_compra=s_data['compra']
-    s_venta=s_data['venta']
 
     # obtiene min_v (mejor venta), max_c (mejor compra), y si hay arbitraje posible
     min_v, max_c, posible = arbitraje_posible(casas)
@@ -28,21 +35,29 @@ def send_gmail_with_dolar():
         html = f.read()
 
     # === Construir secciones dinámicas ===
-    top3_compra_html = "".join([
-        f"<li style='margin-bottom:4px;'>🏦 "
-        f"<a href='{casa['url']}' style='color:#0077cc;text-decoration:none;' target='_blank'>{casa['nombre']}</a>: "
-        f"<b style='color:#00b341'>{casa['compra']}</b> PEN</li>"
-        for casa in top3_c
-    ])
+    top3_compra_html = "".join(
+        [
+            f"<li style='margin-bottom:4px;'>🏦 "
+            f"<a href='{casa['url']}' style='color:#0077cc;text-decoration:none;' target='_blank'>{casa['nombre']}</a>: "
+            f"<b style='color:#00b341'>{casa['compra']}</b> PEN</li>"
+            for casa in top3_c
+        ]
+    )
 
-    top3_venta_html = "".join([
-        f"<li style='margin-bottom:4px;'>💰 "
-        f"<a href='{casa['url']}' style='color:#0077cc;text-decoration:none;' target='_blank'>{casa['nombre']}</a>: "
-        f"<b style='color:#e63946'>{casa['venta']}</b> PEN</li>"
-        for casa in top3_v
-    ])
+    top3_venta_html = "".join(
+        [
+            f"<li style='margin-bottom:4px;'>💰 "
+            f"<a href='{casa['url']}' style='color:#0077cc;text-decoration:none;' target='_blank'>{casa['nombre']}</a>: "
+            f"<b style='color:#e63946'>{casa['venta']}</b> PEN</li>"
+            for casa in top3_v
+        ]
+    )
 
-    arbitraje_txt = "✅ Existe oportunidad de arbitraje" if posible else "❌ No hay arbitraje disponible"
+    arbitraje_txt = (
+        "✅ Existe oportunidad de arbitraje"
+        if posible
+        else "❌ No hay arbitraje disponible"
+    )
 
     # Reemplazar valores en la plantilla
     html = (
@@ -57,13 +72,14 @@ def send_gmail_with_dolar():
     )
 
     # === Enviar correo ===
-    subject = f"📩 Informe diario de casas de cambio - {datetime.now().strftime('%d/%m/%Y')}"
+    subject = (
+        f"📩 Informe diario de casas de cambio - {datetime.now().strftime('%d/%m/%Y')}"
+    )
     mailer = GmailMailer()
     mailer.send_html_email(
-        to_email=settings.EMAIL_TO,
-        subject=subject,
-        html_content=html
+        to_email=settings.EMAIL_TO, subject=subject, html_content=html
     )
+
 
 if __name__ == "__main__":
     send_gmail_with_dolar()

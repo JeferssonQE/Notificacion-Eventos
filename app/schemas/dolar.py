@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime, date
 
+
 class DolarBase(BaseModel):
     origen: str
     fecha: date
@@ -8,8 +9,10 @@ class DolarBase(BaseModel):
     precio_compra: float
     diferencia_ayer: float = None
 
+
 class DolarCreate(DolarBase):
     pass
+
 
 class DolarOut(DolarBase):
     id: int

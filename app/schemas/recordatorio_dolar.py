@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class RecordatorioDolarBase(BaseModel):
     numero: str
     nombre: str
@@ -13,6 +14,7 @@ class RecordatorioDolarBase(BaseModel):
 
 class RecordatorioDolarCreate(RecordatorioDolarBase):
     pass
+
 
 class RecordatorioDolarOut(RecordatorioDolarBase):
     id: int
