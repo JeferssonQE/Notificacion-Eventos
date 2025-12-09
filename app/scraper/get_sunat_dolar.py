@@ -18,8 +18,18 @@ def time_today():
     return now.year, now.month, now.day
 
 def insert_db(data):
-    return supabase.table("dolar").insert(data).execute()
-
+    try:
+        #validate already data of dolar exists 
+        fecha = data.get("fecha")
+        existing = supabase.table("dolar").select("*").eq("origen", data.get("origen")).eq("fecha", fecha).execute()
+        if existing.data:
+            print(f"Data for {data.get('origen')} on {fecha} already exists. Skipping insert.")
+            return existing
+        return supabase.table("dolar").insert(data).execute()
+    except Exception as e:
+        print("❌ Error inserting data:", e)
+        return None
+    
 def get_history(origen):
     return (
         supabase.table("dolar")
