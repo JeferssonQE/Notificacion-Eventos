@@ -7,9 +7,11 @@ load_dotenv()
 
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_API_KEY
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as e:
+    print("❌ Error creating Supabase client:", e)
+    
 if __name__ == "__main__":
     print("Supabase client created successfully.")
     result = supabase.table("dolar").select("*").execute()
