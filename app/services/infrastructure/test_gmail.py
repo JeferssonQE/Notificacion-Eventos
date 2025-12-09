@@ -14,7 +14,6 @@ def porcentaje_cambio(actual, anterior):
         return round(((actual - anterior) / anterior) * 100, 2)
     except ZeroDivisionError:
         return 0
-    
 def badge(valor):
     """Devuelve un badge HTML de variación"""
     if valor > 0:

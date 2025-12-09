@@ -11,8 +11,16 @@ def time_today():
     return fecha
 
 def insert_casa_db(data):
-    response = supabase.table("dolar").insert(data).execute()
-    return response
+    try:
+        #validate if data already exists for today
+        fecha = data.get("fecha")
+        existing = supabase.table("dolar").select("*").eq("origen", data.get("origen")).eq("fecha", fecha).execute()
+        if existing.data:
+            print(f"Data for {data.get('origen')} on {fecha} already exists. Skipping insert.")
+            return existing
+        supabase.table("dolar").insert(data).execute()
+    except Exception as e:
+        print(f"Error inserting data into Supabase: {e}")
 
 def get_exchange_rates_casas() -> list[dict]:
 
@@ -71,7 +79,7 @@ def get_exchange_rates_casas() -> list[dict]:
             "precio_compra": compra,
             "precio_venta": venta,
         }
-
+        
         insert_casa_db(data)
     
     return casas
