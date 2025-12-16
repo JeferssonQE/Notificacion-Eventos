@@ -263,6 +263,10 @@ Diseño responsive optimizado para dispositivos móviles:
 
 <img width="315" height="455" alt="Reporte de tipo de cambio en Gmail - Mobile" src="https://github.com/user-attachments/assets/b56f7be5-85a1-43c9-98f3-910f39516cb9" />
 
+### Base de datos Supabase 
+Base de datos para el proyecto:
+<img width="1247" height="550" alt="image" src="https://github.com/user-attachments/assets/5829c50f-0a61-4eb7-8be0-93a7e75a4630" />
+
 ### Contenido del Reporte
 
 El sistema genera reportes HTML con:
