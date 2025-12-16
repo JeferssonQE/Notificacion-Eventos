@@ -259,7 +259,32 @@ Puedes ejecutar el workflow manualmente desde GitHub:
 
 ## 📧 Contenido del Reporte
 
+<<<<<<< HEAD
 El sistema genera reportes HTML profesionales con:
+=======
+### GitHub Actions - Ejecución Automática
+El workflow se ejecuta diariamente de forma automática:
+
+<img width="989" height="605" alt="GitHub Actions ejecutando el workflow diario" src="https://github.com/user-attachments/assets/52d9db4f-7ffa-4e9a-893a-6c8a51ee96d3" />
+
+### Reporte por Email - Vista Desktop
+Reporte HTML profesional con análisis completo del tipo de cambio:
+
+<img width="1035" height="489" alt="Reporte de tipo de cambio en Gmail - Desktop" src="https://github.com/user-attachments/assets/e728f777-cf29-4a4c-bb23-c22dbde3d623" />
+
+### Reporte por Email - Vista Mobile
+Diseño responsive optimizado para dispositivos móviles:
+
+<img width="315" height="455" alt="Reporte de tipo de cambio en Gmail - Mobile" src="https://github.com/user-attachments/assets/b56f7be5-85a1-43c9-98f3-910f39516cb9" />
+
+### Base de datos Supabase 
+Base de datos para el proyecto:
+<img width="1247" height="550" alt="image" src="https://github.com/user-attachments/assets/5829c50f-0a61-4eb7-8be0-93a7e75a4630" />
+
+### Contenido del Reporte
+
+El sistema genera reportes HTML con:
+>>>>>>> 4e0df87061f06259554f4ccebc53ff4ac0412749
 - 📈 Tipo de cambio oficial SUNAT con variación diaria
 - 🏆 Top 3 mejores casas para comprar dólares
 - 💰 Top 3 mejores casas para vender dólares
