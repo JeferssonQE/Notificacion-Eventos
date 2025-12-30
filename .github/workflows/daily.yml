@@ -24,7 +24,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Ejecutar script de correo
+      - name: Ingestar datos diarios (BCRP + Market + Casas)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
+        run: python -m app.services.data_ingestion
+
+      - name: Generar y enviar reporte diario
         env:
           TOKEN_SUNAT_API: ${{ secrets.TOKEN_SUNAT_API }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -32,4 +38,4 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
-        run: python -m app.services.infrastructure.test_gmail
+        run: python -m app.services.infrastructure.send_email

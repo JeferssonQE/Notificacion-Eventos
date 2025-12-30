@@ -6,7 +6,6 @@ from functools import lru_cache
 
 dotenv.load_dotenv()
 
-
 class Settings(BaseSettings):
     DB_USER:     str = ""
     DB_PASSWORD: str = ""
@@ -45,8 +44,6 @@ class Settings(BaseSettings):
     @property
     def supabase_database_url(self):
         return (
-            # f"postgresql://postgres:{self.YOUR_PASSWORD}@db.talzmqegmmrilxypoztr.supabase.co:5432/postgres"
-            # Example transaction mode string:
             f"postgresql://postgres:{self.SUPABASE_PASSWORD}@db.talzmqegmmrilxypoztr.supabase.co:5432/postgres"
         )
 

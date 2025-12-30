@@ -1,0 +1,31 @@
+name: Scraping-Horario-Casas-Cambio
+
+on:
+  schedule:
+    # Ejecutar 4 veces al día: 9am, 12pm, 4pm, 8pm (hora Lima)
+    - cron: '0 13,17,21,1 * * *'  # UTC (Lima +5)
+  workflow_dispatch:
+
+jobs:
+  scrape_casas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.1'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar scraping horario
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
+        run: python -m app.scraper.hourly_scraper

@@ -46,59 +46,134 @@ def dolar_sunat_today():
     fecha_sunat = today.strftime("%d/%m/%Y")
 
     payload = {"anio": today.year, "mes": today.month - 1, "token": settings.TOKEN_SUNAT_API}
-    response = requests.post(URL, json=payload, headers=headers)
+    
+    try:
+        response = requests.post(URL, json=payload, headers=headers, timeout=10)
+        
+        if not response.ok:
+            print(f"⚠️ Error API SUNAT: {response.status_code}")
+            print("🔄 Intentando con scraper como fallback...")
+            return _dolar_sunat_scraper_fallback()
 
-    if not response.ok:
-        print("❌ Error SUNAT:", response.status_code)
-        return None
+        compra = venta = 0.0
 
-    compra = venta = 0.0
+        for item in response.json():
+            if item["fecPublica"] == fecha_sunat:
+                if item["codTipo"] == "C":
+                    compra = float(item["valTipo"])
+                elif item["codTipo"] == "V":
+                    venta = float(item["valTipo"])
 
-    for item in response.json():
-        if item["fecPublica"] == fecha_sunat:
-            if item["codTipo"] == "C":
-                compra = float(item["valTipo"])
-            elif item["codTipo"] == "V":
-                venta = float(item["valTipo"])
+        # No se encontró datos del día
+        if compra == 0 and venta == 0:
+            print("⚠️ SUNAT API no tiene datos para hoy (fin de semana/feriado)")
+            print("🔄 Intentando con scraper como fallback...")
+            return _dolar_sunat_scraper_fallback()
 
-    # No se encontró datos del día
-    if compra == 0 and venta == 0:
-        print("❌ SUNAT no publicó tipo de cambio hoy")
-        return None
+        # Obtener historial antes de insertar
+        history = get_history("SUNAT_API")
 
-    # Obtener historial antes de insertar
-    history = get_history("SUNAT_API")
+        # Si ya existe el registro de hoy → no insertar
+        if history and history[0]["fecha"] == fecha_iso:
+            print("⚠️ Ya existe registro de hoy. No se inserta.")
+        else:
+            insert_db({
+                "origen": "SUNAT_API",
+                "fecha": fecha_iso,
+                "precio_compra": compra,
+                "precio_venta": venta,
+            })
 
-    # Si ya existe el registro de hoy → no insertar
-    if history and history[0]["fecha"] == fecha_iso:
-        print("⚠️ Ya existe registro de hoy. No se inserta.")
-    else:
-        insert_db({
+        # Actualizamos historia después de insertar
+        history = get_history("SUNAT_API")
+
+        # Encontrar ayer
+        ayer = None
+        if len(history) > 1:
+            ayer = {
+                "compra": history[1]["precio_compra"],
+                "venta": history[1]["precio_venta"],
+                "fecha": history[1]["fecha"],
+            }
+
+        return {
             "origen": "SUNAT_API",
             "fecha": fecha_iso,
-            "precio_compra": compra,
-            "precio_venta": venta,
-        })
-
-    # Actualizamos historia después de insertar
-    history = get_history("SUNAT_API")
-
-    # Encontrar ayer
-    ayer = None
-    if len(history) > 1:
-        ayer = {
-            "compra": history[1]["precio_compra"],
-            "venta": history[1]["precio_venta"],
-            "fecha": history[1]["fecha"],
+            "compra": compra,
+            "venta": venta,
+            "ayer": ayer,
         }
+    
+    except Exception as e:
+        print(f"❌ Error al consultar API SUNAT: {e}")
+        print("🔄 Intentando con scraper como fallback...")
+        return _dolar_sunat_scraper_fallback()
 
-    return {
-        "origen": "SUNAT_API",
-        "fecha": fecha_iso,
-        "compra": compra,
-        "venta": venta,
-        "ayer": ayer,
-    }
+
+def _dolar_sunat_scraper_fallback():
+    """
+    Fallback usando scraper cuando la API falla o no tiene datos
+    """
+    try:
+        from app.scraper.scraper_sunat_dolar import get_today_exchange_rate
+        
+        print("🌐 Ejecutando scraper de SUNAT...")
+        scraper_data = get_today_exchange_rate()
+        
+        if not scraper_data:
+            print("❌ Scraper tampoco pudo obtener datos")
+            return None
+        
+        # Convertir formato del scraper al formato esperado
+        fecha_iso = datetime.now().strftime("%Y-%m-%d")
+        compra = scraper_data.get("precio_compra")
+        venta = scraper_data.get("precio_venta")
+        
+        if not compra or not venta:
+            print("❌ Scraper no devolvió datos válidos")
+            return None
+        
+        # Obtener historial
+        history = get_history("SUNAT_SCRAPER")
+        
+        # Si ya existe el registro → no insertar
+        if history and history[0]["fecha"] == fecha_iso:
+            print("⚠️ Ya existe registro de scraper para hoy. No se inserta.")
+        else:
+            insert_db({
+                "origen": "SUNAT_SCRAPER",
+                "fecha": fecha_iso,
+                "precio_compra": compra,
+                "precio_venta": venta,
+            })
+        
+        # Actualizar historia
+        history = get_history("SUNAT_SCRAPER")
+        
+        # Encontrar ayer
+        ayer = None
+        if len(history) > 1:
+            ayer = {
+                "compra": history[1]["precio_compra"],
+                "venta": history[1]["precio_venta"],
+                "fecha": history[1]["fecha"],
+            }
+        
+        print(f"✅ Scraper exitoso: Compra {compra}, Venta {venta}")
+        
+        return {
+            "origen": "SUNAT_SCRAPER",
+            "fecha": fecha_iso,
+            "compra": compra,
+            "venta": venta,
+            "ayer": ayer,
+        }
+    
+    except Exception as e:
+        print(f"❌ Error en scraper fallback: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 if __name__ == "__main__":
     data = dolar_sunat_today()

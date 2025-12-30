@@ -1,66 +1,72 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from app.db.database import get_db
+from fastapi import APIRouter
 from datetime import datetime
-import psutil
-import os
 
 router = APIRouter()
 
 
 @router.get("/health")
 def health_check():
-    """
-    Health check básico - verifica que la aplicación esté funcionando
-    """
+    """Health check endpoint para monitoreo"""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0",
+        "service": "Dólar Analytics API",
+        "timestamp": datetime.now().isoformat(),
+        "version": "2.0.0"
     }
 
 
-@router.get("/health/detailed")
-def detailed_health_check(db: Session = Depends(get_db)):
-    """
-    Health check detallado - verifica base de datos y recursos del sistema
-    """
+@router.get("/health/db")
+def database_health():
+    """Verifica conexión a Supabase"""
     try:
-        # Verificar conexión a la base de datos
-        db.execute("SELECT 1")
-        db_status = "connected"
+        from app.db.supabase.client import get_supabase_client
+        
+        supabase = get_supabase_client()
+        # Intenta hacer una query simple
+        result = supabase.table("bcrp_data").select("id").limit(1).execute()
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
-        db_status = f"error: {str(e)}"
-
-    # Información del sistema
-    memory_usage = psutil.virtual_memory().percent
-    cpu_usage = psutil.cpu_percent()
-    disk_usage = psutil.disk_usage("/").percent
-
-    return {
-        "status": "healthy" if db_status == "connected" else "unhealthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0",
-        "database": db_status,
-        "system": {
-            "memory_usage_percent": memory_usage,
-            "cpu_usage_percent": cpu_usage,
-            "disk_usage_percent": disk_usage,
-        },
-    }
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 
-@router.get("/health/ready")
-def readiness_check():
-    """
-    Readiness check - verifica que la aplicación esté lista para recibir tráfico
-    """
-    return {"status": "ready", "timestamp": datetime.utcnow().isoformat()}
-
-
-@router.get("/health/live")
-def liveness_check():
-    """
-    Liveness check - verifica que la aplicación esté viva
-    """
-    return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
+@router.get("/health/celery")
+def celery_health():
+    """Verifica estado de Celery"""
+    try:
+        from app.celery.config import celery_app
+        
+        # Inspeccionar workers activos
+        inspect = celery_app.control.inspect()
+        active_workers = inspect.active()
+        
+        if active_workers:
+            return {
+                "status": "healthy",
+                "celery": "running",
+                "workers": list(active_workers.keys()),
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "status": "warning",
+                "celery": "no_workers",
+                "message": "No hay workers activos",
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "celery": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }

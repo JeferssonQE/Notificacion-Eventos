@@ -1,109 +1,141 @@
-import time, random
+"""
+Celery tasks para Data Analytics Pipeline
+Tareas asíncronas para scraping, análisis y reportes
+"""
 from app.celery.config import celery_app
-from app.utils.get_sunat_dolar import dolar_sunat_today
-
-# from app.scraper.scraper_dolar import get_today_exchange_rate
-from app.db.database import get_db_session, Dolar
-from app.db.database import RecordatorioDolar
-from celery.schedules import crontab
+from datetime import datetime, timedelta
 
 
-# test celery
-@celery_app.task(name="tasks.prueba")
-def prueba():
-    print("✅ Celery está funcionando correctamente")
+# ===== TAREAS DE SCRAPING =====
 
-
-# ----- GUARDAR PRECIO -----
-@celery_app.task
-def update_dolar_price(origen, fecha, precio_venta, precio_compra):
-    session = get_db_session()()
+@celery_app.task(name="tasks.scrape_hourly_casas")
+def scrape_hourly_casas():
+    """Scrapea precios de casas de cambio (ejecutado por workflow)"""
+    from app.scraper.hourly_scraper import scrape_and_store_hourly
+    
     try:
-        dolar = Dolar(
-            origen=origen,
-            fecha=fecha,
-            precio_venta=precio_venta,
-            precio_compra=precio_compra,
-        )
-        session.merge(dolar)
-        session.commit()
-        return f"✅ Guardado {fecha}: C={dolar.precio_compra}, V={dolar.precio_venta}"
+        result = scrape_and_store_hourly()
+        return {"status": "success", "result": result}
     except Exception as e:
-        session.rollback()
-        return f"❌ Error guardando: {e}"
-    finally:
-        session.close()
+        return {"status": "error", "error": str(e)}
 
 
-# ----- SCRAPE + SAVE -----
-@celery_app.task
-def scrape_and_save():
-    data = dolar_sunat_today()
-    if not data:
-        return "❌ No se pudo obtener datos de SUNAT"
-
-    return update_dolar_price(
-        "SUNAT_API",
-        data["fecha"],
-        data["venta"],
-        data["compra"],
-    )
-
-
-# Wrapper con jitter para no golpear siempre exacto a las 00:32
-@celery_app.task(name="app.utils.tasks.scrape_and_save_with_jitter")
-def scrape_and_save_with_jitter(jitter_max_seconds=180):
-    if jitter_max_seconds and jitter_max_seconds > 0:
-        time.sleep(random.randint(0, int(jitter_max_seconds)))
-    return scrape_and_save()
-
-
-# ----- ALERTAS -----
-def calculate_increment(current, percentage):
-    return current + (current * (percentage / 100.0))
-
-
-def calculate_decrement(current, percentage):
-    return current - (current * (percentage / 100.0))
-
-
-@celery_app.task(name="app.utils.tasks.verificar_alertas")
-def verificar_alertas(precio_actual):
-    session = get_db_session()()
-    print(f"🔔 Verificando alertas para precio actual: {precio_actual}")
+@celery_app.task(name="tasks.ingest_daily_data")
+def ingest_daily_data():
+    """Ingesta datos diarios de BCRP y Market (últimos 3 días para asegurar días hábiles)"""
+    from app.services.data_ingestion import ingest_recent
+    
     try:
-        alertas = session.query(RecordatorioDolar).filter_by(activo=True).all()
-        disparadas = 0
-
-        for alerta in alertas:
-            if alerta.movimiento == "subio" and precio_actual >= calculate_increment(
-                alerta.valor_objetivo, alerta.porcentaje
-            ):
-                enviar_notificacion.delay(
-                    alerta.user_id, precio_actual, alerta.valor_objetivo, "subio"
-                )
-                alerta.activo = False
-                disparadas += 1
-            elif alerta.movimiento == "bajo" and precio_actual <= calculate_decrement(
-                alerta.valor_objetivo, alerta.porcentaje
-            ):
-                enviar_notificacion.delay(
-                    alerta.user_id, precio_actual, alerta.valor_objetivo, "bajo"
-                )
-                alerta.activo = False
-                disparadas += 1
-        session.commit()
-        return f"🔔 Alertas disparadas: {disparadas}"
+        ingest_recent()  # Últimos 3 días en lugar de solo hoy
+        return {"status": "success", "message": "Datos diarios ingestados"}
     except Exception as e:
-        session.rollback()
-        return f"❌ Error verificando alertas: {e}"
-    finally:
-        session.close()
+        return {"status": "error", "error": str(e)}
 
 
-@celery_app.task
-def enviar_notificacion(user_id, precio, objetivo, movimiento):
-    # Aquí integras correo/WhatsApp/SMS/push, etc.
-    print(
-        f"📩 Notificación → user={user_id} | precio={precio} | objetivo={objetivo} | movimiento={movimiento}"
-    )
+# ===== TAREAS DE ANÁLISIS =====
+
+@celery_app.task(name="tasks.calculate_analytics")
+def calculate_analytics(days: int = 7):
+    """Calcula métricas de analytics para todas las casas"""
+    from app.analytics.price_analysis import analyze_all_casas
+    
+    try:
+        analysis = analyze_all_casas(days=days)
+        return {
+            "status": "success",
+            "casas_analyzed": len(analysis),
+            "data": analysis
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@celery_app.task(name="tasks.detect_arbitrage")
+def detect_arbitrage():
+    """Detecta oportunidades de arbitraje"""
+    from app.analytics.price_analysis import get_best_opportunities
+    
+    try:
+        opportunities = get_best_opportunities()
+        
+        # Si hay arbitraje, podría enviar alerta
+        if opportunities.get("arbitrage", {}).get("possible"):
+            print(f"🚀 ARBITRAJE DETECTADO: {opportunities['arbitrage']}")
+        
+        return {"status": "success", "opportunities": opportunities}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# ===== TAREAS DE REPORTES =====
+
+@celery_app.task(name="tasks.generate_daily_report")
+def generate_daily_report():
+    """Genera y envía reporte diario por email"""
+    from app.services.infrastructure.test_gmail import send_gmail_with_dolar
+    
+    try:
+        send_gmail_with_dolar()
+        return {"status": "success", "message": "Reporte enviado"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@celery_app.task(name="tasks.generate_weekly_summary")
+def generate_weekly_summary():
+    """Genera resumen semanal con insights profundos"""
+    from app.analytics.price_analysis import analyze_all_casas
+    
+    try:
+        analysis = analyze_all_casas(days=7)
+        
+        # Aquí podrías generar un PDF o enviar un email especial
+        summary = {
+            "period": "weekly",
+            "casas_count": len(analysis),
+            "most_volatile": sorted(analysis, key=lambda x: x.get("volatility_compra", 0), reverse=True)[:3],
+            "most_stable": sorted(analysis, key=lambda x: x.get("volatility_compra", 0))[:3],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        return {"status": "success", "summary": summary}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# ===== TAREAS DE LIMPIEZA =====
+
+@celery_app.task(name="tasks.cleanup_old_data")
+def cleanup_old_data(days_to_keep: int = 90):
+    """Limpia datos antiguos para optimizar storage"""
+    from app.db.supabase.client import get_supabase_client
+    
+    try:
+        supabase = get_supabase_client()
+        cutoff_date = (datetime.now() - timedelta(days=days_to_keep)).strftime("%Y-%m-%d")
+        
+        # Eliminar datos horarios antiguos (mantener solo últimos 90 días)
+        result = supabase.table("dolar_hourly")\
+            .delete()\
+            .lt("fecha", cutoff_date)\
+            .execute()
+        
+        return {
+            "status": "success",
+            "message": f"Datos anteriores a {cutoff_date} eliminados",
+            "deleted_count": len(result.data) if result.data else 0
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# ===== TAREAS DE PRUEBA =====
+
+@celery_app.task(name="tasks.health_check")
+def health_check():
+    """Verifica que Celery esté funcionando"""
+    return {
+        "status": "healthy",
+        "message": "✅ Celery está funcionando correctamente",
+        "timestamp": datetime.now().isoformat()
+    }
